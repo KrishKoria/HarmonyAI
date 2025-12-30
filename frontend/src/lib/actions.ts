@@ -195,3 +195,61 @@ export async function toggleLikeSong(songId: string) {
 
   revalidatePath("/");
 }
+
+/**
+ * Fetch featured songs for landing page (most liked, published)
+ * No authentication required - only returns public songs
+ */
+export async function getFeaturedSongs() {
+  const songs = await db.song.findMany({
+    where: {
+      published: true,
+      s3Key: { not: null },
+    },
+    include: {
+      user: { select: { name: true } },
+      _count: { select: { likes: true } },
+      categories: true,
+    },
+    orderBy: {
+      likes: { _count: "desc" },
+    },
+    take: 6,
+  });
+
+  return Promise.all(
+    songs.map(async (song) => ({
+      id: song.id,
+      title: song.title,
+      prompt: song.prompt ?? "AI-generated music",
+      thumbnailUrl: song.thumbnailS3Key
+        ? await getPresignedUrl(song.thumbnailS3Key)
+        : null,
+      categories: song.categories,
+      user: song.user,
+      likeCount: song._count.likes,
+    }))
+  );
+}
+
+/**
+ * Get presigned play URL for public songs (no auth required)
+ * Only works for published songs
+ */
+export async function getPublicPlayUrl(songId: string) {
+  const song = await db.song.findUniqueOrThrow({
+    where: {
+      id: songId,
+      published: true,
+      s3Key: { not: null },
+    },
+    select: { s3Key: true },
+  });
+
+  await db.song.update({
+    where: { id: songId },
+    data: { listenCount: { increment: 1 } },
+  });
+
+  return getPresignedUrl(song.s3Key!);
+}
