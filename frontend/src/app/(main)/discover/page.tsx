@@ -6,7 +6,7 @@ import { Music } from "lucide-react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-export default async function HomePage() {
+export default async function DiscoverPage() {
   const session = await auth.api.getSession({
     headers: await headers(),
   });

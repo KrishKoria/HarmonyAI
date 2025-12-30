@@ -8,8 +8,8 @@ export default function SidebarMenuItems() {
   const pathname = usePathname();
   let items = [
     {
-      title: "Home",
-      url: "/",
+      title: "Discover",
+      url: "/discover",
       icon: Home,
       active: false,
     },
